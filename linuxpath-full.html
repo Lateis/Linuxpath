@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LinuxPath — Learn Linux & Termux</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --surface: #ffffff;
+    --surface2: #f0f1f5;
+    --border: #e4e6ed;
+    --text: #1a1d27;
+    --text2: #5a5f7a;
+    --accent: #2d3250;
+    --accent2: #424769;
+    --highlight: #676f9d;
+    --glow: rgba(103,111,157,0.12);
+    --green: #4caf82;
+    --orange: #f0935c;
+    --blue: #5b8dee;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 2px 12px rgba(45,50,80,0.08);
+    --shadow-hover: 0 8px 28px rgba(45,50,80,0.14);
+    --transition: 0.3s cubic-bezier(0.4,0,0.2,1);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: clamp(13px, 1.5vw, 16px); scroll-behavior: smooth; }
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0.65rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+  }
+  .logo { font-family: 'Courier New', monospace; font-weight: bold; font-size: 1rem; color: var(--accent); white-space: nowrap; flex-shrink: 0; }
+  .logo span { color: var(--highlight); }
+  .progress-wrap { flex: 1; display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
+  .progress-meta { display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text2); font-family: 'Courier New', monospace; }
+  .progress-bar { height: 5px; background: var(--surface2); border-radius: 10px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--highlight), var(--green)); border-radius: 10px; transition: width 0.5s cubic-bezier(0.4,0,0.2,1); }
+  .stage { flex: 1; display: flex; align-items: flex-start; justify-content: center; padding: 1.5rem 1rem 5.5rem; }
+  .screen { display: none; width: 100%; max-width: 680px; animation: slideIn 0.4s cubic-bezier(0.4,0,0.2,1); }
+  .screen.active { display: block; }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(36px); } to { opacity: 1; transform: translateX(0); } }
+  .lesson-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); padding: clamp(1.2rem, 3.5vw, 2rem); margin-bottom: 1.25rem; }
+  .lesson-badge { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 0.25rem 0.75rem; font-size: 0.68rem; font-family: 'Courier New', monospace; color: var(--text2); margin-bottom: 1rem; }
+  .lesson-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+  .lesson-title { font-family: 'Courier New', monospace; font-size: clamp(1.1rem, 2.8vw, 1.5rem); font-weight: bold; color: var(--accent); margin-bottom: 0.35rem; line-height: 1.3; }
+  .lesson-subtitle { font-size: 0.82rem; color: var(--text2); margin-bottom: 1.25rem; font-family: 'Courier New', monospace; }
+  .mascot-row { display: flex; align-items: flex-end; gap: 0.9rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .penguin { flex-shrink: 0; width: clamp(56px, 10vw, 80px); animation: pengFloat 3s ease-in-out infinite; }
+  @keyframes pengFloat { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-6px) rotate(1deg); } }
+  .penguin svg { width: 100%; height: auto; display: block; }
+  .speech-bubble { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); border-bottom-left-radius: 4px; padding: 0.8rem 1rem; font-size: 0.84rem; color: var(--text); line-height: 1.6; flex: 1; min-width: 160px; position: relative; }
+  .speech-bubble::before { content: ''; position: absolute; bottom: 12px; left: -10px; border: 5px solid transparent; border-right-color: var(--border); }
+  .speech-bubble::after { content: ''; position: absolute; bottom: 13px; left: -8px; border: 4px solid transparent; border-right-color: var(--surface2); }
+  .content-section { margin-bottom: 1.1rem; }
+  .section-label { font-family: 'Courier New', monospace; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--highlight); margin-bottom: 0.5rem; }
+  p { font-size: 0.9rem; line-height: 1.75; color: var(--text); margin-bottom: 0.65rem; max-width: 62ch; }
+  code { font-family: 'Courier New', monospace; background: var(--surface2); padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.85em; }
+  .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 0.65rem; margin-top: 0.65rem; }
+  .info-pill { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.85rem 1rem; transition: box-shadow var(--transition), transform var(--transition); }
+  .info-pill:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
+  .info-pill .icon { font-size: 1.35rem; margin-bottom: 0.4rem; }
+  .info-pill h4 { font-family: 'Courier New', monospace; font-size: 0.8rem; color: var(--accent); margin-bottom: 0.25rem; }
+  .info-pill p { font-size: 0.76rem; color: var(--text2); margin: 0; max-width: none; }
+  .cmd-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 0.9rem; margin-top: 0.5rem; }
+  .cmd-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.1rem; transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition); }
+  .cmd-card:hover { box-shadow: var(--shadow-hover); transform: translateY(-3px); border-color: var(--highlight); }
+  .cmd-name { font-family: 'Courier New', monospace; font-size: 1rem; font-weight: bold; color: var(--accent); background: var(--surface2); display: inline-block; padding: 0.18rem 0.6rem; border-radius: var(--radius-sm); margin-bottom: 0.65rem; border: 1px solid var(--border); }
+  .cmd-row { display: flex; flex-direction: column; gap: 0.45rem; }
+  .cmd-field { font-size: 0.79rem; line-height: 1.55; color: var(--text); }
+  .cmd-field strong { font-family: 'Courier New', monospace; font-size: 0.67rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--highlight); display: block; margin-bottom: 0.1rem; }
+  .cmd-example { font-family: 'Courier New', monospace; font-size: 0.79rem; background: var(--accent); color: #c8ffd4; padding: 0.35rem 0.65rem; border-radius: var(--radius-sm); display: inline-block; margin: 0.15rem 0; }
+  .cmd-tip { font-size: 0.74rem; background: #fffbf0; border: 1px solid #f0d99a; border-radius: var(--radius-sm); padding: 0.45rem 0.65rem; color: #7a5c00; margin-top: 0.3rem; }
+  .ethics-split { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; margin-top: 0.65rem; }
+  @media (max-width: 480px) { .ethics-split { grid-template-columns: 1fr; } }
+  .ethics-col { border-radius: var(--radius); padding: 0.9rem; }
+  .ethics-col.good { background: #f0faf5; border: 1px solid #a8dfc0; }
+  .ethics-col.bad  { background: #fdf4f4; border: 1px solid #f0b8b8; }
+  .ethics-col h4 { font-family: 'Courier New', monospace; font-size: 0.78rem; margin-bottom: 0.5rem; }
+  .ethics-col.good h4 { color: #2a7d52; }
+  .ethics-col.bad  h4 { color: #a03030; }
+  .ethics-col ul { list-style: none; display: flex; flex-direction: column; gap: 0.3rem; }
+  .ethics-col ul li { font-size: 0.76rem; color: var(--text2); padding-left: 1.1em; position: relative; line-height: 1.45; }
+  .ethics-col.good ul li::before { content: '✓'; position: absolute; left: 0; color: var(--green); }
+  .ethics-col.bad  ul li::before { content: '✕'; position: absolute; left: 0; color: #d05050; }
+  .roadmap { display: flex; flex-direction: column; gap: 0.65rem; margin-top: 0.65rem; }
+  .roadmap-item { display: flex; align-items: center; gap: 0.9rem; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; transition: box-shadow var(--transition), transform var(--transition); }
+  .roadmap-item:hover { box-shadow: var(--shadow-hover); transform: translateX(4px); }
+  .roadmap-num { font-family: 'Courier New', monospace; font-size: 0.68rem; font-weight: bold; background: var(--accent); color: #fff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .roadmap-text h4 { font-family: 'Courier New', monospace; font-size: 0.82rem; color: var(--accent); }
+  .roadmap-text p { font-size: 0.74rem; color: var(--text2); margin: 0; max-width: none; }
+  .complete-center { text-align: center; padding: 1.5rem 1rem; }
+  .complete-center .big-penguin { width: clamp(80px, 18vw, 120px); margin: 0 auto 1.25rem; animation: pengFloat 2.5s ease-in-out infinite; }
+  .complete-center h2 { font-family: 'Courier New', monospace; font-size: clamp(1.1rem, 3vw, 1.5rem); color: var(--accent); margin-bottom: 0.65rem; }
+  .complete-center p { margin: 0 auto 0.75rem; max-width: 40ch; text-align: center; font-size: 0.88rem; }
+  .restart-btn { display: inline-block; margin-top: 0.75rem; font-family: 'Courier New', monospace; font-size: 0.85rem; padding: 0.6rem 1.5rem; background: var(--accent); color: #fff; border: none; border-radius: 30px; cursor: pointer; transition: all var(--transition); }
+  .restart-btn:hover { background: var(--accent2); transform: translateY(-2px); }
+  .bottom-nav { position: sticky; bottom: 0; background: var(--surface); border-top: 1px solid var(--border); padding: 0.75rem 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; z-index: 100; }
+  .nav-step { font-family: 'Courier New', monospace; font-size: 0.74rem; color: var(--text2); }
+  .btn { font-family: 'Courier New', monospace; font-size: 0.85rem; padding: 0.55rem 1.25rem; border-radius: 30px; border: none; cursor: pointer; transition: all var(--transition); font-weight: bold; }
+  .btn-back { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+  .btn-back:hover { background: var(--border); color: var(--accent); }
+  .btn-back:disabled { opacity: 0.3; cursor: not-allowed; }
+  .btn-next { background: var(--accent); color: #fff; box-shadow: 0 4px 12px rgba(45,50,80,0.22); }
+  .btn-next:hover { background: var(--accent2); transform: translateY(-2px); }
+  .btn-finish { background: linear-gradient(135deg, var(--green), #3a9e6e); color: #fff; box-shadow: 0 4px 12px rgba(76,175,130,0.3); }
+  .btn-finish:hover { transform: translateY(-2px); }
+  @media (max-width: 520px) {
+    .mascot-row { flex-direction: column; align-items: flex-start; }
+    .speech-bubble::before, .speech-bubble::after { display: none; }
+    .speech-bubble { border-radius: var(--radius); }
+    .cmd-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="penguin-svg" viewBox="0 0 120 140">
+    <ellipse cx="60" cy="90" rx="38" ry="46" fill="#2d3250"/>
+    <ellipse cx="60" cy="97" rx="22" ry="30" fill="#f7f8fa"/>
+    <ellipse cx="60" cy="48" rx="30" ry="28" fill="#2d3250"/>
+    <ellipse cx="60" cy="52" rx="18" ry="16" fill="#f7f8fa"/>
+    <circle cx="53" cy="47" r="4.5" fill="#fff"/>
+    <circle cx="67" cy="47" r="4.5" fill="#fff"/>
+    <circle cx="54" cy="48" r="2.5" fill="#2d3250"/>
+    <circle cx="68" cy="48" r="2.5" fill="#2d3250"/>
+    <circle cx="55" cy="47" r="1" fill="#fff"/>
+    <circle cx="69" cy="47" r="1" fill="#fff"/>
+    <ellipse cx="60" cy="57" rx="7" ry="4" fill="#f0935c"/>
+    <ellipse cx="22" cy="95" rx="10" ry="24" fill="#2d3250" transform="rotate(-12 22 95)"/>
+    <ellipse cx="98" cy="95" rx="10" ry="24" fill="#2d3250" transform="rotate(12 98 95)"/>
+    <ellipse cx="47" cy="133" rx="13" ry="5" fill="#f0935c"/>
+    <ellipse cx="73" cy="133" rx="13" ry="5" fill="#f0935c"/>
+    <ellipse cx="44" cy="56" rx="5" ry="3" fill="#f0935c" opacity="0.4"/>
+    <ellipse cx="76" cy="56" rx="5" ry="3" fill="#f0935c" opacity="0.4"/>
+  </symbol>
+</svg>
+
+<header class="topbar">
+  <div class="logo">Linux<span>Path</span></div>
+  <div class="progress-wrap">
+    <div class="progress-meta">
+      <span id="lessonLabel">Lesson 1 of 10</span>
+      <span id="pctLabel">0%</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  </div>
+</header>
+
+<main class="stage">
+
+  <!-- SCREEN 1 -->
+  <div class="screen active" id="screen-0">
+    <div class="lesson-card">
+      <div class="lesson-badge"><span class="dot"></span>Lesson 1 — Welcome</div>
+      <div class="lesson-title">Welcome to the Command Line World</div>
+      <div class="lesson-subtitle">Linux &amp; Termux Fundamentals</div>
+      <div class="mascot-row">
+        <div class="penguin"><svg><use href="#penguin-svg"/></svg></div>
+        <div class="speech-bubble">Hey there! I'm <strong>Tux</strong>, your Linux guide 🐧<br>Together, we'll unlock the power of the command line — step by tiny step. No rush, no pressure. Just curiosity!</div>
+      </div>
+      <div class="content-section">
+        <div class="section-label">What awaits you</div>
+        <p>You're about to enter the world that powers the internet, cybersecurity labs, smartphones, and supercomputers — all through a simple text interface called the <strong>command line</strong>.</p>
+        <p>By the end of this course, you'll be comfortable navigating a Linux system, running real commands in Termux on Android, and understanding why these skills matter in the cybersecurity world.</p>
+      </div>
+      <div class="info-grid">
+        <div class="info-pill"><div class="icon">🐧</div><h4>Linux Basics</h4><p>The OS powering security professionals worldwide</p></div>
+        <div class="info-pill"><div class="icon">📱</div><h4>Termux</h4><p>Linux on your Android, right in your pocket</p></div>
+        <div class="info-pill"><div class="icon">⌨️</div><h4>Real Commands</h4><p>Actual commands used by pros every day</p></div>
+        <div class="info-pill"><div class="icon">🔐</div><h4>Cyber Ethics</h4><p>Knowledge used responsibly for good</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 2 -->
+  <div class="screen" id="screen-1">
+    <div class="lesson-card">
+      <div class="lesson-badge"><span class="dot"></span>Lesson 2 — Linux</div>
+      <div class="lesson-title">What is Linux?</div>
+      <div class="lesson-subtitle">The operating system that runs the world</div>
+      <div class="mascot-row">
+        <div class="penguin"><svg><use href="#penguin-svg"/></svg></div>
+        <div class="speech-bubble">Linux is the backbone of modern technology. It's free, open, and incredibly powerful. Let me explain why cybersecurity pros absolutely love it!</div>
+      </div>
+      <div class="content-section">
+        <div class="section-label">The Basics</div>
+        <p>An <strong>operating system</strong> is software that manages your computer's hardware and lets you run programs. You're probably familiar with Windows or macOS — Linux is another operating system, but it's open source, meaning anyone can see and improve its code.</p>
+      </div>
+      <div class="info-grid">
+        <div class="info-pill"><div class="icon">🌐</div><h4>Powers the Internet</h4><p>Over 96% of web servers run Linux. Every time you visit a website, Linux is likely serving it.</p></div>
+        <div class="info-pill"><div class="icon">🔓</div><h4>Open Source</h4><p>The code is public. Security researchers can inspect it, find bugs, and make it safer.</p></div>
+        <div class="info-pill"><div class="icon">🛡️</div><h4>Cybersecurity Standard</h4><p>Kali Linux, Parrot OS, and Ubuntu are all Linux — the preferred platforms for security testing.</p></div>
+        <div class="info-pill"><div class="icon">⚙️</div><h4>Full Control</h4><p>You control every part of the system. No hidden processes, no locked features.</p></div>
+      </div>
+      <div class="content-section" style="margin-top:1.25rem">
+        <div class="section-label">Why Security Professionals Choose Linux</div>
+        <p>Linux gives professionals fine-grained control over networks, processes, and files. The command line allows automation that would take hours to do manually through a GUI. Most security tools are built for Linux first — and some exclusively run on Linux.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 3 -->
+  <div class="screen" id="screen-2">
+    <div class="lesson-card">
+      <div class="lesson-badge"><span class="dot"></span>Lesson 3 — Termux</div>
+      <div class="lesson-title">What is Termux?</div>
+      <div class="lesson-subtitle">A portable Linux lab in your pocket</div>
+      <div class="mascot-row">
+        <div class="penguin"><svg><use href="#penguin-svg"/></svg></div>
+        <div class="speech-bubble">Termux is amazing — it brings real Linux power straight to your Android phone. No rooting needed, no special hardware. Just download and start learning!</div>
+      </div>
+      <div class="content-section">
+        <div class="section-label">What is it?</div>
+        <p><strong>Termux</strong> is a free Android app that provides a complete Linux-like terminal environment. It runs a lightweight Linux shell on your Android device, letting you execute real commands, install packages, and build programs — all without needing a computer.</p>
+      </div>
+      <div class="info-grid">
+        <div class="info-pill"><div class="icon">📱</div><h4>Android Native</h4><p>Runs on any Android 7+ phone or tablet. No rooting required.</p></div>
+        <div class="info-pill"><div class="icon">🔧</div><h4>Real Linux Commands</h4><p>The same commands used on real servers work identically in Termux.</p></div>
+        <div class="info-pill"><div class="icon">📦</div><h4>Package Manager</h4><p>Install Python, Git, Nmap, and hundreds of other tools with one command.</p></div>
+        <div class="info-pill"><div class="icon">🎒</div><h4>Practice Anywhere</h4><p>On the bus, at a café, anywhere — your Linux lab goes with you.</p></div>
+      </div>
+      <div class="content-section" style="margin-top:1.25rem">
+        <div class="section-label">Why Termux is Perfect for Beginners</div>
+        <p>You don't need an expensive laptop or a virtual machine setup to start learning Linux. Termux democratises cybersecurity education — anyone with an Android phone can build real, practical skills starting today.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 4 -->
+  <div class="screen" id="screen-3">
+    <div class="lesson-card">
+      <div class="lesson-badge"><span class="dot"></span>Lesson 4 — Command Line</div>
+      <div class="lesson-title">What is the Command Line?</div>
+      <div class="lesson-subtitle">Text-based control — the professional's interface</div>
+      <div class="mascot-row">
+        <div class="penguin"><svg><use href="#penguin-svg"/></svg></div>
+        <div class="speech-bubble">Forget clicking icons — the command line is where real power lives. Once you get comfortable here, you'll wonder how you ever did anything without it!</div>
+      </div>
+      <div class="content-section">
+        <div class="section-label">GUI vs CLI</div>
+        <p>A <strong>GUI</strong> (Graphical User Interface) is what you're used to — windows, icons, menus, and buttons. A <strong>CLI</strong> (Command Line Interface) is a text-only environment where you type instructions directly to the computer.</p>
+        <p>Both accomplish the same goals. But the CLI is dramatically faster, more precise, and capable of automating complex tasks that would take hours to do manually through a GUI.</p>
+      </div>
+      <div class="info-grid">
+        <div class="info-pill"><div class="icon">⚡</div><h4>Speed</h4><p>Rename 10,000 files in one command. A GUI would take hours.</p></div>
+        <div class="info-pill"><div class="icon">🎯</div><h4>Precision</h4><p>Every action is explicit. You know exactly what you're telling the computer.</p></div>
+        <div class="info-pill"><div class="icon">🤖</div><h4>Automation</h4><p>Chain commands into scripts. Run complex workflows with one keystroke.</p></div>
+        <div class="info-pill"><div class="icon">🌍</div><h4>Remote Access</h4><p>Manage servers on the other side of the world via SSH — all through text.</p></div>
+      </div>
+      <div class="content-section" style="margin-top:1.25rem">
+        <div class="section-label">The Prompt</div>
+        <p>When you open Termux, you'll see something like <code>~ $</code> — this is the prompt. It's the terminal waiting for your instruction. Type a command, press Enter, and the system responds. That's the entire interaction model — and it's beautiful in its simplicity.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 5 -->
+  <div class="screen" id="screen-4">
+    <div class="lesson-card">
+      <div class="lesson-badge"><span class="dot"></span>Lesson 5 — Core Commands</div>
+      <div class="lesson-title">Essential Termux Commands</div>
+      <div class="lesson-subtitle">Your first toolkit — learn these and you'll feel at home</div>
+      <div class="mascot-row">
+        <div class="penguin"><svg><use href="#penguin-svg"/></svg></div>
+        <div class="speech-bubble">These 10 commands are your foundation. Master them and you'll be navigating Linux like a pro. Study each card carefully — there's a lot of gold here!</div>
+      </div>
+    </div>
+    <div class="cmd-grid">
+      <div class="cmd-card">
+        <div class="cmd-name">pwd</div>
+        <div class="cmd-row">
+          <div class="cmd-field"><strong>What it does</strong>Prints your current location in the file system — your "working directory."</div>
+          <div class="cmd-field"><strong>Technical Detail</strong>Stands for Print Working Directory. Returns the full absolute path of the directory you're currently inside.</div>
+          <div class="cmd-field"><strong>Example</strong><div class="cmd-example">$ pwd</div></div>
+          <div class="cmd-field"><strong>Output</strong>/data/data/com.termux/files/home</div>
+          <div class="cmd-field"><strong>Why it matters</strong>Before acting, you need to know where you are. Always run pwd when you feel lost.</div>
+          <div class="cmd-tip">💡 Think of pwd as GPS for your terminal. Run it often when navigating.</div>
+        </div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">ls</div>
+        <div class="cmd-row">
+          <div class="cmd-field"><strong>What it does</strong>Lists all files and folders in your current directory.</div>
+          <div class="cmd-field"><strong>Technical Detail</strong>Stands for List. Use <code>ls -la</code> for detailed view including hidden files.</div>
+          <div class="cmd-field"><strong>Example</strong><div class="cmd-example">$ ls</div></div>
+          <div class="cmd-field"><strong>Output</strong>Documents  Downloads  projects  script.py</div>
+          <div class="cmd-field"><strong>Why it matters</strong>You need to see what's in a directory before working inside it.</div>
+          <div class="cmd-tip">💡 Try <code>ls -la</code> for file sizes, permissions, and hidden files.</div>
+        </div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">cd</div>
+        <div class="cmd-row">
+          <div class="cmd-field"><strong>What it does</strong>Changes your current directory — moves you into a different folder.</div>
+          <div class="cmd-field"><strong>Technical Detail</strong>Stands for Change Directory. Works with relative and absolute paths.</div>
+          <div class="cmd-field"><strong>Example</strong><div class="cmd-example">$ cd Documents</div></div>
+          <div class="cmd-field"><strong>Output</strong>No output — your prompt changes to reflect the new directory.</div>
+          <div class="cmd-field"><strong>Why it matters</strong>Navigation is fundamental. Everything depends on being in the right location.</div>
+          <div class="cmd-tip">💡 Type <code>cd ~</code> to jump back to your home directory from anywhere.</div>
+        </div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">cd ..</div>
+        <div class="cmd-row">
+          <div class="cmd-field"><strong>What it does</strong>Moves you one level up — back to the parent directory.</div>
+          <div class="cmd-field"><strong>Technical Detail</strong>The <code>..</code> always points to the parent. Chain: <code>cd ../.. </code> goes up two levels.</div>
+          <div class="cmd-field"><strong>Example</strong><div class="cmd-example">$ cd ..</div></div>
+          <div class="cmd-field"><strong>Output</strong>No output — you're now one folder level higher.</div>
+          <div class="cmd-field"><strong>Why it matters</strong>You'll constantly move between directories. This is your "go back" button.</div>
+          <div class="cmd-tip">💡 Combine with pwd — go up, then verify where you are.</div>
+        </div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">mkdir</div>
+        <div class="cmd-row">
+          <div class="cmd-field"><strong>What it does</strong>Creates a new directory (folder) with the name you specify.</div>
+          <div class="cmd-field"><strong>Technical Detail</strong>Stands for Make Directory. Use <code>mkdir -p</code> to create nested directories at once.</div>
+          <div class="cmd-field"><strong>Example</strong><div class="cmd-example">$ mkdir myproject</div></div>
+          <div class="cmd-field"><strong>Output</strong>No output. Run <code>ls</code> to confirm it was created.</div>
+          <div class="cmd-field"><strong>Why it matters</strong>Organisation is critical. Always structure your files in logical directories.</div>
+          <div class="cmd-tip">💡 Use underscores not spaces: <code>mkdir my_project</code></div>
+        </div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">rm</div>
+        <div class="cmd-row">
+          <div class="cmd-field"><strong>What it does</strong>Permanently deletes files or directories. There is no recycle bin.</div>
+          <div class="cmd-field"><strong>Technical Detail</strong>Stands for Remove. Use <code>rm -r</code> to delete directories and all their contents recursively.</div>
+          <div class="cmd-field"><strong>Example</strong><div class="cmd-example">$ rm file.txt</div></div>
+          <div class="cmd-field"><strong>Output</strong>No output. The file is gone immediately and permanently.</div>
+          <div class="cmd-field"><strong>Why it matters</strong>Clean up your workspace and manage disk space carefully.</div>
+          <div class="cmd-tip">⚠️ rm deletes forever. Always double-check before pressing Enter.</div>
+        </div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">clear</div>
+        <div class="cmd-row">
+          <div class="cmd-field"><strong>What it does</strong>Clears the terminal screen — gives you a clean slate.</div>
+          <div class="cmd-field"><strong>Technical Detail</strong>Sends a terminal escape sequence that scrolls the viewport up. History is still accessible by scrolling.</div>
+          <div class="cmd-field"><strong>Example</strong><div class="cmd-example">$ clear</div></div>
+          <div class="cmd-field"><strong>Output</strong>The screen becomes clean and empty. Prompt appears at the top.</div>
+          <div class="cmd-field"><strong>Why it matters</strong>A cluttered terminal is hard to read. Keep it clean for clarity and focus.</div>
+          <div class="cmd-tip">💡 The shortcut <code>Ctrl + L</code> does the same thing faster.</div>
+        </div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">pkg update</div>
+        <div class="cmd-row">
+          <div class="cmd-field"><strong>What it does</strong>Refreshes Termux's list of available packages from online repositories.</div>
+          <div class="cmd-field"><strong>Technical Detail</strong>Downloads updated package metadata. Does not upgrade installed packages — that's pkg upgrade.</div>
+          <div class="cmd-field"><strong>Example</strong><div class="cmd-example">$ pkg update</div></div>
+          <div class="cmd-field"><strong>Output</strong>A list of repositories being checked with package counts.</div>
+          <div class="cmd-field"><strong>Why it matters</strong>Keeps your package database current so you install the latest, most secure versions.</div>
+          <div class="cmd-tip">💡 Always run pkg update before installing anything new.</div>
+        </div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">pkg upgrade</div>
+        <div class="cmd-row">
+          <div class="cmd-field"><strong>What it does</strong>Upgrades all installed packages to their latest available versions.</div>
+          <div class="cmd-field"><strong>Technical Detail</strong>Downloads and installs newer versions of all packages where updates exist. Run after pkg update.</div>
+          <div class="cmd-field"><strong>Example</strong><div class="cmd-example">$ pkg upgrade</div></div>
+          <div class="cmd-field"><strong>Output</strong>A list of packages being upgraded. Prompted to confirm with Y.</div>
+          <div class="cmd-field"><strong>Why it matters</strong>Security patches and bug fixes arrive via upgrades. Keeping packages updated is essential.</div>
+          <div class="cmd-tip">💡 Run <code>pkg update && pkg upgrade</code> to do both in one step.</div>
+        </div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">pkg install</div>
+        <div class="cmd-row">
+          <div class="cmd-field"><strong>What it does</strong>Installs a new software package from Termux's repositories.</div>
+          <div class="cmd-field"><strong>Technical Detail</strong>Downloads and installs the specified package plus all its dependencies automatically.</div>
+          <div class="cmd-field"><strong>Example</strong><div class="cmd-example">$ pkg install python</div></div>
+          <div class="cmd-field"><strong>Output</strong>Download progress, dependency resolution, and installation confirmation.</div>
+          <div class="cmd-field"><strong>Why it matters</strong>This is how you extend Termux's capabilities with new tools and languages.</div>
+          <div class="cmd-tip">💡 Install multiple at once: <code>pkg install python git curl</code></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 6 -->
+  <div class="screen" id="screen-5">
+    <div class="lesson-card">
+      <div class="lesson-badge"><span class="dot"></span>Lesson 6 — Professional Use</div>
+      <div class="lesson-title">Why Security Professionals Love Termux</div>
+      <div class="lesson-subtitle">Mobility, power, and control in one tool</div>
+      <div class="mascot-row">
+        <div class="penguin"><svg><use href="#penguin-svg"/></svg></div>
+        <div class="speech-bubble">Security professionals value tools that are portable, capable, and quick. Termux checks every single box — that's why it's in so many professional security toolkits!</div>
+      </div>
+      <div class="content-section">
+        <div class="section-label">The Professional Advantage</div>
+        <p>Security professionals operate in diverse environments — server rooms, offices, remote locations, and field assessments. Having a full Linux environment on a pocket-sized device is a genuine advantage that no laptop can match for portability.</p>
+      </div>
+      <div class="info-grid">
+        <div class="info-pill"><div class="icon">🧳</div><h4>Extreme Portability</h4><p>A security toolkit that fits in your pocket. Runs on the phone you already carry.</p></div>
+        <div class="info-pill"><div class="icon">🔁</div><h4>Automation</h4><p>Write scripts to automate repetitive security tasks — schedule them, chain them, reuse them.</p></div>
+        <div class="info-pill"><div class="icon">🌐</div><h4>Network Tools</h4><p>curl, wget, nmap, and netcat provide real networking capabilities for testing.</p></div>
+        <div class="info-pill"><div class="icon">📚</div><h4>Learning Platform</h4><p>Practice real Linux skills anywhere — commutes, breaks, or late night study sessions.</p></div>
+        <div class="info-pill"><div class="icon">💻</div><h4>Programming</h4><p>Python, Ruby, Node.js, and more run natively. Write and test scripts immediately.</p></div>
+        <div class="info-pill"><div class="icon">🔐</div><h4>Security Testing</h4><p>In authorised environments, professionals use Termux as a lightweight assessment tool.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 7 -->
+  <div class="screen" id="screen-6">
+    <div class="lesson-card">
+      <div class="lesson-badge"><span class="dot"></span>Lesson 7 — Possibilities</div>
+      <div class="lesson-title">What You Can Build &amp; Do</div>
+      <div class="lesson-subtitle">The horizon is wider than you think</div>
+      <div class="mascot-row">
+        <div class="penguin"><svg><use href="#penguin-svg"/></svg></div>
+        <div class="speech-bubble">Once you learn the fundamentals, doors open in every direction. Here's a glimpse of what becomes possible — and none of it requires anything beyond curiosity!</div>
+      </div>
+      <div class="info-grid">
+        <div class="info-pill"><div class="icon">🌐</div><h4>Run Web Servers</h4><p>Spin up a local HTTP server with Python in one command. Test websites and APIs instantly.</p></div>
+        <div class="info-pill"><div class="icon">🤖</div><h4>Automation Scripts</h4><p>Write Python or Bash scripts that automate repetitive tasks — saving hours every week.</p></div>
+        <div class="info-pill"><div class="icon">💻</div><h4>Programming</h4><p>Code in Python, JavaScript, C, Ruby, and more. Termux is a full development environment.</p></div>
+        <div class="info-pill"><div class="icon">🔬</div><h4>Security Labs</h4><p>Practice ethical hacking concepts safely in controlled, isolated lab environments.</p></div>
+        <div class="info-pill"><div class="icon">🔗</div><h4>Remote Connections</h4><p>Use SSH to securely connect to remote servers and manage them from your phone.</p></div>
+        <div class="info-pill"><div class="icon">📊</div><h4>System Management</h4><p>Monitor processes, manage files, schedule tasks, and control system resources.</p></div>
+        <div class="info-pill"><div class="icon">🗄️</div><h4>Databases</h4><p>Run SQLite and other databases. Build and query real data stores from the command line.</p></div>
+        <div class="info-pill"><div class="icon">🔄</div><h4>Version Control</h4><p>Use Git to manage code projects professionally — commit, branch, and collaborate.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 8 -->
+  <div class="screen" id="screen-7">
+    <div class="lesson-card">
+      <div class="lesson-badge"><span class="dot"></span>Lesson 8 — Ethics</div>
+      <div class="lesson-title">Responsibility &amp; Ethics</div>
+      <div class="lesson-subtitle">Knowledge is power — use it wisely</div>
+      <div class="mascot-row">
+        <div class="penguin"><svg><use href="#penguin-svg"/></svg></div>
+        <div class="speech-bubble">This is the most important lesson of all. The same skills that make you a great security professional can cause serious harm if misused. Let's talk about the line between legal and illegal.</div>
+      </div>
+      <div class="content-section">
+        <div class="section-label">The Core Rule</div>
+        <p>Cybersecurity skills are like a lockpick set — incredibly useful for locksmiths and security professionals, but dangerous in the wrong hands. <strong>You must only use these skills on systems you own or have explicit written permission to test.</strong> Anything else is a crime in virtually every country.</p>
+      </div>
+      <div class="ethics-split">
+        <div class="ethics-col good">
+          <h4>✓ Legal &amp; Ethical Use</h4>
+          <ul>
+            <li>Testing your own devices and servers</li>
+            <li>Authorised penetration testing (bug bounties)</li>
+            <li>Learning in sandboxed lab environments</li>
+            <li>Studying with CTF (Capture The Flag) challenges</li>
+            <li>Building security tools for defence</li>
+            <li>Helping organisations find vulnerabilities they hire you to find</li>
+          </ul>
+        </div>
+        <div class="ethics-col bad">
+          <h4>✕ Illegal &amp; Harmful</h4>
+          <ul>
+            <li>Accessing any system without permission</li>
+            <li>Scanning networks you don't own</li>
+            <li>Intercepting others' communications</li>
+            <li>Installing tools on others' devices</li>
+            <li>Attempting to break into accounts</li>
+            <li>Sharing others' private data</li>
+          </ul>
+        </div>
+      </div>
+      <div class="content-section" style="margin-top:1.25rem">
+        <div class="section-label">The Career Path</div>
+        <p>Ethical hackers — called penetration testers — are paid very well to legally attack systems with permission, find weaknesses, and report them. This is a legitimate, growing, and highly respected career. The knowledge you're building here is the foundation of that career. Use it to build, not to destroy.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 9 -->
+  <div class="screen" id="screen-8">
+    <div class="lesson-card">
+      <div class="lesson-badge"><span class="dot"></span>Lesson 9 — Power</div>
+      <div class="lesson-title">The Power of Linux</div>
+      <div class="lesson-subtitle">Understanding what you now hold in your hands</div>
+      <div class="mascot-row">
+        <div class="penguin"><svg><use href="#penguin-svg"/></svg></div>
+        <div class="speech-bubble">The skills you're building right now are the same skills that power the most critical systems on Earth. That's not an exaggeration — that's fact.</div>
+      </div>
+      <div class="content-section">
+        <div class="section-label">Where Linux Lives</div>
+        <p>Linux runs the servers behind Google, Facebook, Amazon, and Netflix. It powers the International Space Station, Tesla cars, hospital systems, banking infrastructure, and 100% of the world's top supercomputers. Android is built on Linux. The internet itself runs on Linux.</p>
+      </div>
+      <div class="content-section">
+        <div class="section-label">What System Control Really Means</div>
+        <p>When you understand Linux, you understand <em>how computers actually work at their core</em>. You understand processes, memory, network traffic, file permissions, and user management. This knowledge lets you build more secure systems, identify vulnerabilities, recover from failures, and automate complex operations.</p>
+        <p>Most users interact with a thin layer of polish built on top of Linux. You're learning to operate the engine itself. That's a rare and valuable skill — and you're already on your way.</p>
+      </div>
+      <div class="info-grid">
+        <div class="info-pill"><div class="icon">🚀</div><h4>100% of Supercomputers</h4><p>Every single one of the world's top 500 supercomputers runs Linux.</p></div>
+        <div class="info-pill"><div class="icon">📡</div><h4>The Internet's Core</h4><p>DNS servers, routing infrastructure, and cloud providers all run Linux.</p></div>
+        <div class="info-pill"><div class="icon">💰</div><h4>High-Value Career</h4><p>Linux and cybersecurity skills command some of the highest salaries in tech.</p></div>
+        <div class="info-pill"><div class="icon">🌍</div><h4>Universal Skill</h4><p>Linux knowledge is respected and recognised everywhere in the world.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 10 -->
+  <div class="screen" id="screen-9">
+    <div class="lesson-card">
+      <div class="lesson-badge"><span class="dot"></span>Lesson 10 — Roadmap</div>
+      <div class="lesson-title">What You'll Learn Next</div>
+      <div class="lesson-subtitle">Your journey is just beginning — here's the path ahead</div>
+      <div class="mascot-row">
+        <div class="penguin"><svg><use href="#penguin-svg"/></svg></div>
+        <div class="speech-bubble">You've completed the foundation! Now let me show you what's coming. Each module builds on the last, taking you from beginner to confident Linux practitioner. You've got this!</div>
+      </div>
+      <div class="section-label" style="margin-bottom:0.65rem">Your Learning Roadmap</div>
+      <div class="roadmap">
+        <div class="roadmap-item"><div class="roadmap-num">1</div><div class="roadmap-text"><h4>File Permissions &amp; Ownership</h4><p>chmod, chown, and understanding rwx notation. Control who accesses what.</p></div></div>
+        <div class="roadmap-item"><div class="roadmap-num">2</div><div class="roadmap-text"><h4>Advanced Package Management</h4><p>Repositories, dependencies, pip for Python packages, and managing your toolkit.</p></div></div>
+        <div class="roadmap-item"><div class="roadmap-num">3</div><div class="roadmap-text"><h4>Networking Fundamentals</h4><p>IP addresses, ports, protocols, ping, netstat, and how the internet actually works.</p></div></div>
+        <div class="roadmap-item"><div class="roadmap-num">4</div><div class="roadmap-text"><h4>Installing Security Tools</h4><p>Nmap, Metasploit, Hydra, and building your ethical hacking toolkit in Termux.</p></div></div>
+        <div class="roadmap-item"><div class="roadmap-num">5</div><div class="roadmap-text"><h4>Bash Scripting</h4><p>Write your first scripts, variables, loops, and automate everything you do.</p></div></div>
+        <div class="roadmap-item"><div class="roadmap-num">6</div><div class="roadmap-text"><h4>Python for Security</h4><p>Build scanners, scrapers, and automation tools with Python in Termux.</p></div></div>
+      </div>
+    </div>
+    <div class="lesson-card complete-center">
+      <div class="big-penguin penguin"><svg><use href="#penguin-svg"/></svg></div>
+      <h2>🎉 Foundation Complete!</h2>
+      <p>You've finished the Linux &amp; Termux fundamentals. You now understand the command line, core commands, and the world these tools open up. Be proud — most people never get this far.</p>
+      <p style="color:var(--text2);font-size:0.82rem;">Keep practising. Open Termux and type every command you learned today. Repetition builds mastery.</p>
+      <button class="restart-btn" id="restartBtn">↺ Start Over</button>
+    </div>
+  </div>
+
+</main>
+
+<nav class="bottom-nav">
+  <button class="btn btn-back" id="btnBack" disabled>← Back</button>
+  <div class="nav-step" id="navStep">Screen 1 / 10</div>
+  <button class="btn btn-next" id="btnNext">Next →</button>
+</nav>
+
+<script>
+  const TOTAL = 10;
+  let current = 0;
+  const progressFill = document.getElementById('progressFill');
+  const lessonLabel  = document.getElementById('lessonLabel');
+  const pctLabel     = document.getElementById('pctLabel');
+  const navStep      = document.getElementById('navStep');
+  const btnBack      = document.getElementById('btnBack');
+  const btnNext      = document.getElementById('btnNext');
+  const restartBtn   = document.getElementById('restartBtn');
+
+  function updateUI() {
+    document.querySelectorAll('.screen').forEach((s, i) => s.classList.toggle('active', i === current));
+    const pct = Math.round((current / (TOTAL - 1)) * 100);
+    progressFill.style.width = pct + '%';
+    lessonLabel.textContent = 'Lesson ' + (current + 1) + ' of ' + TOTAL;
+    pctLabel.textContent = pct + '%';
+    navStep.textContent = 'Screen ' + (current + 1) + ' / ' + TOTAL;
+    btnBack.disabled = current === 0;
+    if (current === TOTAL - 1) {
+      btnNext.textContent = '✓ Done';
+      btnNext.className = 'btn btn-finish';
+      btnNext.disabled = true;
+    } else {
+      btnNext.textContent = 'Next →';
+      btnNext.className = 'btn btn-next';
+      btnNext.disabled = false;
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  btnNext.addEventListener('click', () => { if (current < TOTAL - 1) { current++; updateUI(); } });
+  btnBack.addEventListener('click', () => { if (current > 0) { current--; updateUI(); } });
+  restartBtn.addEventListener('click', () => { current = 0; updateUI(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { if (current < TOTAL-1) { current++; updateUI(); } }
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   { if (current > 0) { current--; updateUI(); } }
+  });
+  updateUI();
+</script>
+</body>
+</html>
